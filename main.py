@@ -34,7 +34,8 @@ PROMPTS: Dict[str, int] = {
     "lesion_visible": 1,
 }
 N_PROMPTS = len(PROMPTS)
-PROMPT_DIM_DEFAULT = 16  
+PROMPT_DIM_DEFAULT = 16
+MAX_RESAMPLES_LESION = 15
 
 def to_one_hot(mask_hw: torch.Tensor, num_classes: int) -> torch.Tensor:
     oh = F.one_hot(mask_hw.long(), num_classes=num_classes)
@@ -379,16 +380,29 @@ def sample(args):
 
     sched = LatentScheduler(args.timesteps, device=device)
 
-    z = torch.randn(args.n, args.latent, device=device)
+    def run_diffusion(prompt_ids: torch.Tensor) -> torch.Tensor:
+        z = torch.randn(prompt_ids.size(0), args.latent, device=device)
+        p = prompt_encoder(prompt_ids)
+        for t in reversed(range(args.timesteps)):
+            tt = torch.full((prompt_ids.size(0),), t, device=device, dtype=torch.long)
+            eps_hat = denoiser(z, tt, p)
+            z = sched.step(z, eps_hat, t)
+        return vae.decode(z)
+
     prompt_ids = torch.full((args.n,), PROMPTS[args.prompt], device=device, dtype=torch.long)
-    p = prompt_encoder(prompt_ids)  # compute once
+    logits = run_diffusion(prompt_ids)
 
-    for t in reversed(range(args.timesteps)):
-        tt = torch.full((args.n,), t, device=device, dtype=torch.long)
-        eps_hat = denoiser(z, tt, p)
-        z = sched.step(z, eps_hat, t)
-
-    logits = vae.decode(z)
+    if args.prompt == "lesion_visible":
+        for _ in range(MAX_RESAMPLES_LESION):
+            ids = torch.argmax(logits, dim=1)
+            has_lesion = (ids == LESION_ID).any(dim=(1, 2))
+            if has_lesion.all():
+                break
+            missing = (~has_lesion).nonzero(as_tuple=False).flatten().tolist()
+            if not missing:
+                break
+            for idx in missing:
+                logits[idx] = run_diffusion(prompt_ids[idx:idx + 1])[0]
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

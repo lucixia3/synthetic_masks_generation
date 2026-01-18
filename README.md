@@ -57,6 +57,7 @@ python main.py sample \
   --timesteps 100
 ```
 Produces `generated/mask_{prompt}_{i}.png` colored masks. Prompts available: `lesion_visible` and `no_lesion`.
+When using `lesion_visible`, the sampler will automatically retry up to 15 times per sample to include the infarct label.
 
 ## Quick notes
 - Palette and class ids are fixed in [main.py](main.py) (`NUM_CLASSES=7`, `LESION_ID=6`). Classes: 0 background, 1 soft tissue, 2 bone, 3 CSF, 4 white matter, 5 gray matter, 6 infarct (lesion).
