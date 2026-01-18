@@ -1,0 +1,13 @@
+# Environments
+venv/
+
+# Python
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+
+# Model checkpoints
+ckpts_vae/
+ckpts_ldm/
+*.pt
+*.pth
