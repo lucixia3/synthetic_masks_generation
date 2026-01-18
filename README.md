@@ -7,6 +7,7 @@ The pipeline in [main.py](main.py) trains and samples a VAE + latent diffusion m
 
 ## Pretrained checkpoints
 - VAE and LDM checkpoints are available here: <https://drive.google.com/drive/folders/1m-xTYYYOmgO_v1_betD7p-hkR6Z6Rkfq?usp=drive_link>.
+- Create the directories before downloading to avoid path issues: `ckpts_vae/` for the VAE weights and `ckpts_ldm/` for the LDM weights (each script also writes its outputs there when training).
 
 ## Setup
 
@@ -58,7 +59,7 @@ python main.py sample \
 Produces `generated/mask_{prompt}_{i}.png` colored masks. Prompts available: `lesion_visible` and `no_lesion`.
 
 ## Quick notes
-- Palette and class ids are fixed in [main.py](main.py) (`NUM_CLASSES=7`, `LESION_ID=6`).
+- Palette and class ids are fixed in [main.py](main.py) (`NUM_CLASSES=7`, `LESION_ID=6`). Classes: 0 background, 1 soft tissue, 2 bone, 3 CSF, 4 white matter, 5 gray matter, 6 infarct (lesion).
 - The script never uses CT images; it only consumes binary/multiclass masks.
 - Tune `--timesteps`, `--latent`, and `--prompt-dim` if you change model capacity.
 - For more hyperparameters see the argument parser in [main.py](main.py).
